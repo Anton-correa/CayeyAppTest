@@ -1,0 +1,133 @@
+<!DOCTYPE <!DOCTYPE html>
+<html>
+<head>
+    <title>Editar Notas</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css">
+    <script>window.$ = window.jQuery = require('jquery');</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <style>
+        label{
+            font-size: 16px;
+            font: outline;
+            font-style: oblique;
+            
+        }
+        body{
+            background-color: beige;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-wrapper" style="background-color:grey">
+            <a class="brand-logo" style="font-size:25px; color: honeydew">Editar</a>
+    </div>
+    <div class="row">
+    <div class="col s6" id="Preview">
+
+    </div>
+    <br>
+    <form>
+    <div class="col s8" id="ExtendNotas">
+
+    </div>
+</div>
+    <div>
+        <div>
+        <textarea class="materialize-textarea" type="text" rows="6" cols="50" id="proxN"></textarea>
+        <label for="proxN">Proxima Nota</label></div>
+        <button class="btn waves-effect waves-light" type="submit">Add Nota</button>
+        <button class="btn waves-effect waves-light" onclick="javascript:htmltoPDF()" id="exPDF">Extract to PDF</button>
+        <button class="btn waves-effect waves-light" id="Save">Save Changes</button>
+    </div></form>
+    <script>
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+        const remote = electron.remote;
+        const mysql = require('mysql');
+        const jsPDF = require('jspdf');
+
+        var connection = mysql.createConnection({
+            host     : 'localhost',
+            user     : 'root',
+            password : null,
+            database : 'cayeyapps'
+        });
+        console.log(localStorage);
+        var row_id = localStorage.getItem("Sol_ID")
+
+        var sql = 'SELECT * FROM Solicitudes WHERE Sol_ID = "' + row_id + '"; ';
+        var sqlN = 'SELECT Notas, Fecha FROM notas WHERE Sol_ID = "' + row_id + '"; ';
+        connection.connect();
+        connection.query(sql, function (error, results, fields) {
+            if (error) throw error;
+            console.log(results);
+            
+            $('#Preview').html('<label>Nombre:</label> ' + results[0].Nombre_Sol + '  ' + results[0].Apellidos_Sol +
+            ' <br> <label>Tipo de Solicitud:</label> ' + results[0].Code_Sol + '<br> <label> Empleado:</label> ' + results[0].Emp_ID +
+            ' <br> <label>Barrio:</label> ' + results[0].Barrio + '<br> <label> Sector:</label> ' + results[0].Sector +
+            ' <br> <label>Status:</label> <select class="waves-effect waves-light btn" style="width: 50%" id="Stat" >' +
+    '<option value="">' + results[0].Status + '</option><option value="Detenido">Detenido</option><option value="Indefinido">Indefinido</option>' +
+      '<option value="Completo">Completo</option></select>' + '<br><br> <label> Fecha de Inicio:</label> ' + results[0].Fecha_Sol_Start +
+            '<br> <label> Fecha Final:</label> ' + results[0].Fecha_Sol_Fin + ' <br> <label>Notas: </label>' + results[0].Fecha_Sol_Start + '  ' + results[0].Notas);
+            connection.query("SET time_zone = America/New_York", function (error, results, fields) {
+            console.log(results);
+        });
+            connection.query(sqlN, function (error, result, fields){
+                var dates = new Date();
+                console.log(result);
+            $.each(result, function(index, val){
+                dates = result[index].Fecha;
+                console.log(dates);
+            $('#ExtendNotas').append('<label>  ' + result[index].Fecha + '</label><label>   ' + result[index].Notas + '</label><br><br>')
+            })
+
+            });
+        });
+        function htmltoPDF(){
+            var doc = new jsPDF();
+
+                doc.fromHTML($('#Preview').get(0), 10, 10,{ width:500});
+                doc.fromHTML($('#ExtendNotas').get(0), 20, 20,{width:500});
+                doc.save('reportpdf.pdf');
+        
+            
+        };
+        const form = document.querySelector('form');
+        form.addEventListener('submit', submitForm);
+        
+        function submitForm(e){
+            e.preventDefault();
+            const Notas = document.querySelector('#proxN').value;
+            const Status = document.querySelector('#Stat').value;
+        
+        const sql = "INSERT INTO notas (Sol_ID, Notas, Fecha) VALUES ('" + row_id + "', '" +
+        Notas + "', NOW());";
+        const sqlT = "INSERT INTO solicitudes (Status) VALUES ('" + Status + "') WHERE Sol_ID = '" + row_id + "'; ";
+        document.getElementById("Save").addEventListener("click", function(){
+            connection.query(sqlT, function (error, results, fields) {
+            if (error) throw error;
+            console.log(results);
+            window.close();
+            localStorage.clear();
+            connection.end();
+        
+        });
+        })
+        
+        connection.query(sql, function (error, results, fields) {
+            if (error) throw error;
+            console.log(results);
+        
+        });
+
+        connection.end();
+        window.close();
+
+            //ipcRenderer.send('item:add', item);
+        }
+
+        localStorage.clear();
+    </script>
+</body>
+</html>

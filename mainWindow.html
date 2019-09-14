@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cayey App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script>window.$ = window.jQuery = require('jquery');</script>
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+    <script>if (window.module) module = window.module;</script>
+    <script type="text/javascript" src="html2canvas.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script> 
+    
+    <style>
+        li{
+            padding: 10%;
+            list-style-type: none;
+        }
+        th{
+            width: 250px;
+            background-color: gray;
+            
+        }
+        td:nth-child(2){
+            width: 270px
+        }
+        td:nth-child(4){
+            width: 300px
+        }
+        td {
+            width: 250px;
+            border: 1px solid black;
+        }
+        body{
+            background-color: beige;
+        }
+        
+
+    </style>
+
+</head>
+<body>
+    <nav>
+        <div class = "nav-wrapper">
+            <a class="brand-logo">Cayey Application</a>
+            <ul class="right hide-on-med-and-down">
+                <li><a href="#" id="Adding"><i class="material-icons right">add_circle_outline</i>Add Item</a></li>
+                <li><a href="#" onclick="javascript:htmltoPDF()" id="Editing"><i class="material-icons right">autorenew</i>Generate Report</a></li>
+                <li><a href="#" onclick="javascript:fnExcelReport1()" id="btn_ex"><i class="material-icons right">file_upload</i>Export</a></li>
+                <li><a href="#" id="Analysis"><i class="material-icons right">assignment</i>Report</a></li>
+                
+                </ul>
+        </div>
+        
+        
+    </nav>
+        <div class="row">
+        <div class="col s3">
+           <div class="panel-heading"><b> </b> </div>
+            <div class="panel-heading" id="icon_count" style="position:static"><b>Summary</b> </div>
+           <select class="waves-effect waves-light btn red" id="priority">
+                    <option value="High">High</option>
+                    <option value="Mid-level">Mid-level</option>
+                    <option value="Low">Low</option>
+                </select>
+        </div>
+        
+                <div class="col s9">
+                        <div style="left: 200px">
+                                <label>Search</label>
+                                  <input type="text" name="search" id="search" class="form-control"/>
+                              </div>
+              <div class="tbl_user_data" style="top: 20px; position: relative;"></div>
+          </div>
+        
+          </div>
+          
+           
+          
+          <div class="panel panel-default">
+           
+          
+            <div class="panel-body">
+              
+          </div>
+          <div id="reporte" style="display:none; border-color: black" class="container">
+        </div> 
+          </div>
+          <div class="fixed-action-btn">
+          <a id="menu" class="waves-effect waves-light btn btn-floating" onclick="javascript:discover()" ><i class="material-icons">menu</i></a>
+
+        <!-- Tap Target Structure -->
+        <div class="tap-target" data-target="menu">
+            <div class="tap-target-content">
+            <h5>Recent Changes</h5>
+            <p>A bunch of text</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+        //const tbody = document.querySelector('tbody');
+        const path = require('path');
+        const BrowserWindow = electron.remote.BrowserWindow;
+        const mysql = require('mysql');
+        const jsPDF = require('jspdf');
+        if(typeof require !== 'undefined') XLSX = require('xlsx-style');
+        //var workbook = XLSX.readFile('test.xlsx');
+        
+        var connection = mysql.createConnection({
+            host     : 'localhost',
+            user     : 'root',
+            password : null,
+            database : 'cayeyapps'
+        });
+        
+        connection.connect();
+        
+        connection.query('SELECT * FROM Solicitudes', function (error, results, fields) {
+            if (error) throw error;
+            console.log(results);
+
+
+            var tbl = '';
+	tbl +='<table class="table table-hover" id="tbla">'
+
+		//--->create table header > start
+		tbl +='<thead>';
+			tbl +='<tr>';
+			tbl +='<th onclick="sortTable(0)">Sol ID</th>';
+			tbl +='<th onclick="sortTable(1)">Nombre</th>';
+            tbl +='<th onclick="sortTable(2)">Tipo de Solicitud</th>';
+            tbl +='<th onclick="sortTable(3)">Empleado</th>';
+            tbl +='<th onclick="sortTable(4)">Status</th>';
+            tbl +='<th onclick="sortTable(5)">Fecha de inicio</th>';
+            tbl +='<th>Notas</th>';
+			tbl +='</tr>';
+		tbl +='</thead>';
+		//--->create table header > end
+
+		
+		//--->create table body > start
+		tbl +='<tbody>';
+
+			//--->create table body rows > start
+			$.each(results, function(index, val) 
+			{
+				//you can replace with your database row id
+				var row_id = results[index].Sol_ID;
+
+				//loop through ajax row data
+                tbl +='<tr row_id="'+row_id+'">';
+                    tbl +='<td ><div class="row_data" col_name="Sol_ID">'+val['Sol_ID']+'</div></td>';
+					tbl +='<td ><div class="row_data" col_name="Nombre_Sol">'+val['Nombre_Sol']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Code_Sol">'+val['Code_Sol']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Emp_ID">'+val['Emp_ID']+'</div></td>';
+                    tbl +='<td ><div class="row_data" edit_type="click" col_name="Status">'+val['Status']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Fecha_Sol_Start">'+val['Fecha_Sol_Start']+'</div></td>';
+                    tbl +='<td ><span class="btn_edit"><a href="#" class="btn waves-effect waves-light" row_id="' + row_id + '">Ver Notas</a></span>';
+					
+				tbl +='</tr>';
+            });
+                    tbl +='</tbody>';
+		        //--->create table body > end
+
+	        tbl +='</table>'	
+	        //--->create data table > end
+            $(document).find('.tbl_user_data').html(tbl);
+            
+
+        
+        $(document).on('click', '.row_data', function(event){
+            event.preventDefault();
+            if($(this).attr('edit_type') == 'button' || $(this).attr('edit_type') == ''){
+                return false;
+            }if ($(this).attr('edit_type') == 'click') {
+                $(this).closest('div').attr('contenteditable', 'true');
+            $(this).addClass('bg-warning').css('padding', '5px');
+            $(this).focus();
+            } 
+            
+        });
+
+           
+            $(document).on('click', '.btn_edit', function(event){
+                event.preventDefault();
+                var tbl_row = $(this).closest('tr');
+                var row_id = tbl_row.attr('row_id');
+                localStorage.setItem("Sol_ID", row_id);
+                console.log(localStorage);
+                
+                const modelPath = path.join('file://', __dirname, 'editWindow.html')
+                let win = new BrowserWindow({width: 500, height: 400})
+                win.on('close', function() {win = null})
+                win.loadURL(modelPath)
+                win.show()
+                
+
+            });
+          
+            
+            
+            $(document).on('focusout', '.row_data', function(event) 
+            {
+	            event.preventDefault();
+
+	            var row_id = $(this).closest('tr').attr('row_id'); 
+	
+	            var row_div = $(this)			
+	            .removeClass('bg-warning') //add bg css
+	            .css('padding','')
+
+	            var col_name = row_div.attr('col_name'); 
+	            var col_val = row_div.html(); 
+
+	           const sql = "UPDATE Solicitudes SET " + col_name + " = '" +
+                col_val + "' WHERE Sol_ID = " + row_id + ";";
+        
+        
+                connection.query(sql, function (error, results, fields) {
+                    if (error) throw error;
+                    console.log(results);
+        
+                });
+	
+            });
+            
+            
+
+
+        });
+        $('.dropdown-trigger').dropdown();
+        $(document).ready(function(){
+            $('#priority').change(function(){
+                prior_table($(this).val())
+                console.log('hello pass');
+                
+            });
+            function prior_table(value){
+                let prior = document.querySelector('#priority').value;
+                let sqlp = "SELECT * FROM solicitudes WHERE Prioridad = '" + prior + "'; ";
+                connection.query(sqlp, function (error, results, fields) {
+                    if (error) throw error;
+                    console.log(results);
+                    var tbl = '';
+	tbl +='<table class="table table-hover" id="tbla">'
+
+		//--->create table header > start
+		tbl +='<thead>';
+			tbl +='<tr>';
+			tbl +='<th onclick="sortTable(0)">Sol ID</th>';
+			tbl +='<th onclick="sortTable(1)">Nombre</th>';
+			tbl +='<th onclick="sortTable(2)">Apellidos</th>';
+            tbl +='<th onclick="sortTable(3)">Tipo de Solicitud</th>';
+            tbl +='<th onclick="sortTable(4)">Empleado</th>';
+            tbl +='<th onclick="sortTable(5)">Barrio</th>';
+            tbl +='<th onclick="sortTable(6)">Sector</th>';
+            tbl +='<th onclick="sortTable(7)">Status</th>';
+            tbl +='<th onclick="sortTable(8)">Fecha de inicio</th>';
+            tbl +='<th onclick="sortTable(9)">Fecha de Fin</th>';
+            tbl +='<th>Notas</th>';
+			tbl +='</tr>';
+		tbl +='</thead>';
+		//--->create table header > end
+
+		
+		//--->create table body > start
+		tbl +='<tbody>';
+
+			//--->create table body rows > start
+			$.each(results, function(index, val) 
+			{
+				//you can replace with your database row id
+				var row_id = results[index].Sol_ID;
+
+				//loop through ajax row data
+                tbl +='<tr row_id="'+row_id+'">';
+                    tbl +='<td ><div class="row_data" col_name="Sol_ID">'+val['Sol_ID']+'</div></td>';
+					tbl +='<td ><div class="row_data" col_name="Nombre_Sol">'+val['Nombre_Sol']+'</div></td>';
+					tbl +='<td ><div class="row_data" col_name="Apellidos_Sol">'+val['Apellidos_Sol']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Code_Sol">'+val['Code_Sol']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Emp_ID">'+val['Emp_ID']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Barrio">'+val['Barrio']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Sector">'+val['Sector']+'</div></td>';
+                    tbl +='<td ><div class="row_data" edit_type="click" col_name="Status">'+val['Status']+'</div></td>';
+                    tbl +='<td ><div class="row_data" col_name="Fecha_Sol_Start">'+val['Fecha_Sol_Start']+'</div></td>';
+                    tbl +='<td ><div class="row_data" edit_type="click" col_name="Fecha_Sol_Fin">'+val['Fecha_Sol_Fin']+'</div></td>';
+                    tbl +='<td ><span class="btn_edit"><a href="#" class="btn waves-effect waves-light" row_id="' + row_id + '">Ver Notas</a></span>';
+					
+				tbl +='</tr>';
+            });
+                    tbl +='</tbody>';
+		        //--->create table body > end
+
+	        tbl +='</table>'	
+	        //--->create data table > end
+            $(document).find('.tbl_user_data').html(tbl);
+               
+                });
+            }
+        });
+        $(document).ready(function(){
+            $('#search').keyup(function(){
+                search_table($(this).val())
+            });
+            function search_table(value){
+                $('#tbla tr').each(function(){
+                    var found = 'false';
+                    $(this).each(function(){
+                        if($(this).text().toLocaleLowerCase().indexOf(value.toLocaleLowerCase()) >= 0 || typeof($(this).attr('row_id')) === 'undefined'){
+                            found = 'true';
+                        }
+                    });
+                    if(found == 'true'){
+                        $(this).show();
+                    }else{
+                        $(this).hide();
+                        
+                    }
+                });
+                
+            }
+        });
+        $(document).ready(function(){
+                $('.tap-target').tapTarget();
+            });
+        $('#menu').click(function(){
+            $('.tap-target').tapTarget('open');
+        });
+            
+        const AddBtn = document.getElementById('Adding');
+        
+
+        
+        AddBtn.addEventListener('click', function(event){
+            const modelPath = path.join('file://', __dirname, 'addWindow.html')
+            let win = new BrowserWindow({width: 500, height: 400})
+            win.on('close', function() {win = null})
+            win.loadURL(modelPath)
+            win.show()
+        });
+
+        const RepBtn = document.getElementById('Analysis');
+
+        RepBtn.addEventListener('click', function(event){
+            const modelPath = path.join('file://', __dirname, 'analysisWindow.html')
+            let win = new BrowserWindow({width: 500, height: 400})
+            win.on('close', function() {win = null})
+            win.loadURL(modelPath)
+            win.show()
+        });
+        
+        function htmltoPDF(){
+            var doc = new jsPDF();
+
+            connection.query('SELECT Sector, COUNT(Sector) AS Cantidad FROM Solicitudes GROUP BY Sector ORDER BY Cantidad DESC', function (error, results, fields) {
+            if (error) throw error;
+            $('#reporte').html('<h1>Reporte</h1><br><hr> <label>Sectores con mas solicitudes:</label>');
+            $.each(results, function(index, val){
+                $('#reporte').append('<p>' + val['Sector'] + ':  ' + val['Cantidad'] + '</p><hr>');
+            });
+            console.log(results);
+            });
+            connection.query('SELECT Emp_ID, COUNT(Emp_ID) AS Cantidad FROM Solicitudes GROUP BY Emp_ID ORDER BY Cantidad DESC', function (error, results, fields) {
+            if (error) throw error;
+            var emp = results;
+            $('#reporte').append('<label>Empleados con mas solicitudes:</label>');
+            $.each(emp, function(index, val){
+                $('#reporte').append('<p>' + val['Emp_ID'] + ':  ' + val['Cantidad'] + '</p>');
+            });
+            
+            console.log(emp);
+            
+                doc.fromHTML($('#reporte').get(0), 10, 10,{ width:500});
+                doc.save('testingpdf.pdf');
+             
+            
+            });
+        
+            
+        };
+        
+        $(document).ready(function(){
+            var openC;
+            var compC;
+            var haltC;
+            var totalC;
+            var eX;
+            var sql = 'SELECT COUNT(*) AS cantidad FROM solicitudes WHERE NOT Status = "Comp";';
+            connection.query(sql, function (error, openC, fields) {
+                    if (error) throw error;
+                    console.log(openC);
+                    eX = openC[0];
+                    $('#icon_count').append('<br><i class="Small material-icons">assignment_late</i><label>Open Cases: ' + openC[0].cantidad + '</label>');
+                    //openC = results[0].cantidad;
+                    
+        
+                });
+            var sql = 'SELECT COUNT(*) AS cantidad FROM solicitudes WHERE Status = "Comp";';
+            connection.query(sql, function (error, compC, fields) {
+                    if (error) throw error;
+                    console.log(compC);
+                    $('#icon_count').append('<br> <i class="small material-icons">check</i> <label>Complete Cases: ' + compC[0].cantidad + '</label>');
+                    //compC = results[0].cantidad;
+        
+                });
+            var sql = 'SELECT COUNT(*) AS cantidad FROM solicitudes WHERE Status = "Espe" OR Status = "Inde";';
+            connection.query(sql, function (error, haltC, fields) {
+                    if (error) throw error;
+                    console.log(haltC);
+                    //haltC = results[0].cantidad;
+                    $('#icon_count').append('<br><i class="small material-icons">do_not_disturb_on</i> <label>Halted Cases: ' + haltC[0].cantidad + '</label>');
+        
+                });
+            var sql = 'SELECT COUNT(*) AS cantidad FROM solicitudes;';
+            connection.query(sql, function (error, totalC, fields) {
+                    if (error) throw error;
+                    console.log(totalC);
+                    $('#icon_count').append('<br><i class="small material-icons">assignment_turned_in</i><label>Total Cases: ' + totalC[0].cantidad + '</label>')
+        
+                });
+            //$('#icon_count').append('<br><i class="Small material-icons">assignment_late</i><label>Open Cases: ' + openC + '</label> <br> <i class="small material-icons">check</i> <label>Complete Cases: ' + compC + '</label> <br><i class="small material-icons">do_not_disturb_on</i> <label>Halted Cases: ' + haltC + '</label> <br><i class="small material-icons">assignment_turned_in</i><label>Total Cases: ' + totalC + '</label>')
+        });
+
+            function fnExcelReport1(){
+                var tab_text = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+                tab_text = tab_text + '<head><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
+                tab_text = tab_text + '<x:Name>Test Sheet</x:Name>';
+                tab_text = tab_text + '<x:WorksheetOptions><x:Panes></x:Panes></x:WorksheetOptions></x:ExcelWorksheet>';
+                tab_text = tab_text + '</x:ExcelWorksheets></x:ExcelWorkbook></xml></head><body>';
+                tab_text = tab_text + "<table border='1px'>";
+                tab_text = tab_text + $('#tbla').html();
+                tab_text = tab_text + '</table></body></html>';
+
+                var data_type = 'data:application/vnd.ms-excel';
+                $('#btn_ex').attr('href', data_type + ', ' + encodeURIComponent(tab_text));
+                $('#btn_ex').attr('download', 'Test file.xls');
+            }
+
+            function getEditData(){
+                var row_id = $(this).closest('tr').attr('row_id'); 
+                localStorage.setItem("Sol_ID", row_id);
+                console.log(localStorage);
+                var EditBtn = $(this);
+                EditBtn.addEventListener('click', function(event){
+                const modelPath = path.join('file://', __dirname, 'editWindow.html')
+                let win = new BrowserWindow({width: 500, height: 400})
+                win.on('close', function() {win = null})
+                win.loadURL(modelPath)
+                win.show()
+                });
+            }
+
+
+            function sortTable(n) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById("tbla");
+            switching = true;
+            // Set the sorting direction to ascending:
+            dir = "asc"; 
+            /* Make a loop that will continue until
+            no switching has been done: */
+            while (switching) {
+                // Start by saying: no switching is done:
+                switching = false;
+                rows = table.rows;
+                /* Loop through all table rows (except the
+                first, which contains table headers): */
+                for (i = 1; i < (rows.length - 1); i++) {
+                // Start by saying there should be no switching:
+                shouldSwitch = false;
+                /* Get the two elements you want to compare,
+                one from current row and one from the next: */
+                x = rows[i].getElementsByTagName("TD")[n];
+                y = rows[i + 1].getElementsByTagName("TD")[n];
+                /* Check if the two rows should switch place,
+                based on the direction, asc or desc: */
+                if (dir == "asc") {
+                    if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                    // If so, mark as a switch and break the loop:
+                    shouldSwitch = true;
+                    break;
+                    }
+                } else if (dir == "desc") {
+                    if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                    // If so, mark as a switch and break the loop:
+                    shouldSwitch = true;
+                    break;
+                    }
+                }
+                }
+                if (shouldSwitch) {
+                /* If a switch has been marked, make the switch
+                and mark that a switch has been done: */
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+                // Each time a switch is done, increase this count by 1:
+                switchcount ++; 
+                } else {
+                /* If no switching has been done AND the direction is "asc",
+                set the direction to "desc" and run the while loop again. */
+                if (switchcount == 0 && dir == "asc") {
+                    dir = "desc";
+                    switching = true;
+                }
+                }
+            }
+            }
+    </script>
+</body>
+</html>

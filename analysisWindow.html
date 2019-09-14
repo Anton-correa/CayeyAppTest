@@ -1,0 +1,209 @@
+<!<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Analysis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js"></script>
+    <script>window.$ = window.jQuery = require('jquery');</script>
+</head>
+<body>
+    
+    <div class="grid-container" style="justify-content: space-evenly;">
+        <div class="row">
+            <div class="col-md-6">
+                <canvas id="myChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="myChart01"></canvas>
+            </div>
+        </div>
+        <div class="row">
+                <div class="col-md-6">
+                    <canvas id="myChart02"></canvas>
+                </div>
+                <div class="col-md-6">
+                        <label>Selecciona el empleado</label>
+                        <select class="waves-effect waves-light btn" id="empTbl">
+                            <option value="Martin">Martin</option>
+                            <option value="Natalia">Natalia</option>
+                            <option value="Juan Velez">Juan Velez</option>
+                            <option value="Luis Berrios">Luis Berrios</option>
+                            <option value="Maria">Maria</option>
+                            <option value="Juan">Juan</option>
+                        </select>
+                        <canvas id="myChart03"></canvas>
+                </div>
+        </div>
+        
+    </div>
+
+    <script>
+        let myChart = document.getElementById('myChart').getContext('2d');
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+        const path = require('path');
+        const BrowserWindow = electron.remote.BrowserWindow;
+        const mysql = require('mysql');
+        var connection = mysql.createConnection({
+            host     : 'localhost',
+            user     : 'root',
+            password : null,
+            database : 'cayeyapps'
+        });
+        
+        connection.connect();
+
+        var barr = [], barrSol = [];
+        connection.query('SELECT Barrio, COUNT(Barrio) AS Cantidad FROM `solicitudes` GROUP BY Barrio ORDER BY Cantidad DESC', function (error, results, fields) {
+            if (error) throw error;
+            console.log(results);
+            $.each(results, function(index, val) {
+                barr.push(val['Barrio']);
+                barrSol.push(parseInt(val['Cantidad']));
+            });
+
+        let popChart = new Chart(myChart, {
+            type:'bar',
+            data:{
+                labels:barr,
+                datasets:[{
+                    label:'Solicitudes',
+                    data:barrSol,
+                    backgroundColor: 'red',
+                    borderWidth: 1,
+                    borderColor: '#777',
+                    hoverBorderWidth: 3,
+                    hoverBorderColor: '#000'
+                }]
+            },
+            options:{
+                title:{
+                    display:true,
+                    text: 'Solicitudes por barrios en total',
+                    fontSize: 25
+                },
+                legend:{
+                    position: 'right'
+                }
+            }
+        });
+    });
+        connection.query('SELECT Emp_ID, COUNT(Emp_ID) AS Cantidad FROM Solicitudes GROUP BY Emp_ID ORDER BY Cantidad DESC', function(error, results, fields){
+            if (error) throw error;
+            var empID = [], empCant = [];
+            console.log(results);
+            $.each(results, function(index, val) {
+                empID.push(val['Emp_ID']);
+                empCant.push(parseInt(val['Cantidad']));
+            });
+        let popChart1 = new Chart(myChart01, {
+            type:'pie',
+            data:{
+                labels:empID,
+                datasets:[{
+                    label:'Solicitudes',
+                    data:empCant,
+                    backgroundColor: ['red', 'blue', 'green', 'rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(34, 123, 89, 0.6)'],
+                    borderWidth: 1,
+                    borderColor: '#777',
+                    hoverBorderWidth: 3,
+                    hoverBorderColor: '#000'
+                }]
+            },
+            options:{
+                title:{
+                    display:true,
+                    text: 'Solicitudes por empleado municipal en total',
+                    fontSize: 25
+                },
+                legend:{
+                    position: 'right'
+                }
+            }
+        });
+    });
+
+        let popChart2 = new Chart(myChart02, {
+            type:'line',
+            data:{
+                labels:['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio'],
+                datasets:[{
+                    label:'Solicitudes',
+                    fill: false,
+                    lineTension: 0.1,
+                    backgroundColor: 'rgba(75, 192, 192, 0.4)',
+                    borderJoinStyle: 'miter',
+                    pointBorderColor: 'rgba(75, 192, 192, 1)',
+                    data:[4, 2, 1, 7, 8, 4, 9],
+                    borderWidth: 1,
+                    borderColor: '#777',
+                    hoverBorderWidth: 3,
+                    hoverBorderColor: '#000'
+                }]
+            },
+            options:{
+                title:{
+                    display:true,
+                    text: 'Solicitudes por mes en total',
+                    fontSize: 25
+                },
+                legend:{
+                    position: 'right'
+                }
+            }
+        });
+
+       
+        $(document).ready(function(){
+            $('#myChart03').hide();
+            $('#empTbl').change(function(){
+                prior_table($(this).val())
+                console.log('hello pass');
+                
+            });
+            function prior_table(value){
+                let prior = document.querySelector('#empTbl').value;
+                let sqlp = "SELECT * FROM solicitudes WHERE Emp_ID = '" + prior + "'; ";
+                connection.query(sqlp, function (error, results, fields) {
+                    if (error) throw error;
+                    console.log(results);
+
+                    let popChart3 = new Chart(myChart03, {
+                        type:'line',
+                        data:{
+                            labels:['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio'],
+                            datasets:[{
+                                label:prior,
+                                fill: false,
+                                lineTension: 0.1,
+                                backgroundColor: 'rgba(75, 192, 192, 0.4)',
+                                borderJoinStyle: 'miter',
+                                pointBorderColor: 'rgba(75, 192, 192, 1)',
+                                data:[4, 2, 1, 7, 8, 4, 9],
+                                borderWidth: 1,
+                                borderColor: '#777',
+                                hoverBorderWidth: 3,
+                                hoverBorderColor: '#000'
+                            }]
+                        },
+                        options:{
+                            title:{
+                                display:true,
+                                text: 'Solicitudes por mes en total',
+                                fontSize: 25
+                            },
+                            legend:{
+                                position: 'right'
+                            }
+                        }
+                    });
+                });
+                $('#myChart03').show();
+            };
+        });
+    </script>
+</body>
+</html>

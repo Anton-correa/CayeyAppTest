@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New Items</title>
+    <link rel="stylesheet" 
+    href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css">
+    <script>window.$ = window.jQuery = require('jquery');</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <style>
+    
+    </style>
+</head>
+<body>
+    <div class="container">
+    <form>
+        <div>
+            <label>Entre Nombre</label>
+            <input type="text" id = "Nombre" autofocus>
+
+            <label>Entre Apellidos</label>
+            <input type="text" id = "Apellidos">
+         
+                <label>Selecciona el barrio</label>
+                <select class="waves-effect waves-light btn" id="Barrio">
+                    
+                </select><br><br>
+            
+           
+                <label>Selecciona el Sector</label>
+                <select class="waves-effect waves-light btn" id="Sector">
+                    
+                </select><br><br>
+           
+            <label>Selecciona el Empleado</label>
+            <select class="waves-effect waves-light btn" id="Emp">
+                <option value="Martin">Martin</option>
+                <option value="Juan">Juan</option>
+                <option value="Maria">Maria</option>
+                <option value="Natalia">Natalia</option>
+            </select><br><br>
+
+            <label>Selecciona el tipo de solicitud</label>
+            <select class="waves-effect waves-light btn" id="Sol">
+                <option value="Limpieza">Limpieza de carretera</option>
+                <option value="Recogido">Recogido</option>
+                <option value="Basura">Basura</option>
+                <option value="Reparacion">Reparacion de linea</option>
+            </select><button style="padding: 5px">+</button><br><br>
+
+            <label>Selecciona el estatus de la solicitud</label>
+            <select class="waves-effect waves-light btn" id="Status">
+                <option value="Iniciado">Iniciado</option>
+                <option value="Esperando">En espera</option>
+                <option value="Completo">Completo</option>
+                <option value="Indefinido">Indefinido</option>
+            </select><br><br>
+
+            <label>Notas</label>
+            <input type="text" id = "Notas">
+        </div><br>
+        <button class="btn waves-effect waves-light" type="submit">Add Item</button>
+    </form><br>
+    <button class="btn waves-light" id="closeBtn">Close</button>
+</div>
+
+    <script>
+
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+        const remote = electron.remote;
+        const mysql = require('mysql');
+
+        const CloseBtn = document.getElementById('closeBtn')
+        var connection = mysql.createConnection({
+            host     : 'localhost',
+            user     : 'root',
+            password : null,
+            database : 'cayeyapps'
+        });
+
+        CloseBtn.addEventListener('click', function(event){
+            var window = remote.getCurrentWindow();
+            window.close();
+        });
+        connection.query("SET time_zone = America/New_York", function (error, results, fields) {
+            console.log(results);
+        });
+        document.addEventListener('DOMContentLoaded', function(){
+            var elems = document.querySelectorAll('.dropdown-trigger');
+            var instance = M.Dropdown.init(elems, options);
+        })
+        connection.query("SELECT DISTINCT Barrio from Barrios", function(error, results, fields){
+            
+            $.each(results, function(index, val){
+                
+               localStorage.setItem("Barr"+index, val['Barrio']); 
+                
+            });
+            console.log(localStorage);
+            var stringToAppend = "";
+           // $('#Barrios').html('<label>Seleccione el Barrio</label><select>');
+            $.each(results, function(index, val){
+                var e = localStorage.getItem("Barr"+index);
+                console.log(e);
+                stringToAppend += '<option value="' + e.toString() + '">' + e.toString() + '</option>';
+                //$('#Barrios').append('<option value="' + val['Barrio'] + '">' + val['Barrio'] + '</option></select><br><br>');
+                
+            });
+            //stringToAppend += '</select><br><br>'
+            $('#Barrio').append(stringToAppend);
+           
+                
+            
+            
+        });
+        $('#Barrio').change(function(){
+        connection.query("SELECT Sector FROM Barrios WHERE Barrio = '" + $('#Barrio').find(":selected").text() + "';", function(error, result, fields){
+                console.log(result);
+            $('#Sector').html('');
+            //$('#Sectores').html('<label>Selecciona el Sector</label><select class="waves-effect waves-light btn" id="Sector">')
+            $.each(result, function(index, val){ 
+                $('#Sector').append('<option value="' + val['Sector'] + '">' + val['Sector'] + '</option>');
+                
+            });
+            });
+        });
+        const form = document.querySelector('form');
+        form.addEventListener('submit', submitForm);
+
+        function submitForm(e){
+            e.preventDefault();
+            const Nombre = document.querySelector('#Nombre').value;
+            const Apellidos = document.querySelector('#Apellidos').value;
+            const Barrio = document.querySelector('#Barrio').value;
+            const Sector = document.querySelector('#Sector').value;
+            const Emp = document.querySelector('#Emp').value;
+            const Sol = document.querySelector('#Sol').value;
+            const Status = document.querySelector('#Status').value;
+            var Fecha_Inic = new Date();
+
+            var month = Fecha_Inic.getMonth()+1;
+            var day = Fecha_Inic.getDate();
+
+            var output = Fecha_Inic.getFullYear() + '/' +
+                (month<10 ? '0' : '') + month + '/' +
+                (day<10 ? '0' : '') + day;
+            
+            //const Fecha_Fin = document.querySelector('#Fecha_Fin').value;
+            const Notas = document.querySelector('#Notas').value;
+        connection.connect();   
+        const sql = "INSERT INTO Solicitudes (Nombre_Sol, Apellidos_Sol, Code_Sol, Emp_ID, Barrio, Sector, Status, Fecha_Sol_Start, Notas) VALUES ('" +
+        Nombre + "', '" + Apellidos + "', '" + Sol + "', '" + Emp + "', '" + Barrio + "', '" + Sector + "', '" + Status + "', NOW(), '" + Notas + "');";
+        
+      
+        connection.query(sql, function (error, results, fields) {
+            if (error) throw error;
+            console.log(results);
+        
+        });
+
+        connection.end();
+        window.close();
+        localStorage.clear();
+            //ipcRenderer.send('item:add', item);
+        }
+
+
+    </script>
+</body>
+</html>
